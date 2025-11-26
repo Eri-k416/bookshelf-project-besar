@@ -100,9 +100,22 @@ class Bookshelf {
         void addBook(unique_ptr<Book> book) {
             bookshelf.push_back(book);
             bookId++;
-
         };
 
+        int getBookIndex(int id) {
+            auto it = find_if(bookshelf.begin(), bookshelf.end(), [&](unique_ptr<User> book) {
+                return book->Id == id;
+            });
+
+            if (it != bookshelf.end()) {
+                // Calculate the index using std::distance
+                int index = distance(bookshelf.begin(), it);
+                return index;
+                
+            } else {
+                return -1;
+            };
+        };
 };
 
 class User {
@@ -112,7 +125,7 @@ class User {
         string returnDate; // DDMMYYYYY format
         userBooks userBook;
         // constructor
-        User(UserList& userListTether, string name, string date) {
+        void editUser(UserList& userListTether, string name, string date) {
             Id = userListTether.userid++;
             Name = name;
             returnDate = date;
@@ -151,7 +164,7 @@ class Book {
         bookQueues bookQueue;
 
         // constructor
-        Book(Bookshelf& bookshelfTether, string isbn, string title, string author, int year) {
+        void editBook(Bookshelf& bookshelfTether, string isbn, string title, string author, int year) {
             Id = bookshelfTether.bookId++;
             Isbn = isbn;
             Title = title;
@@ -173,6 +186,14 @@ class Book {
             bookQueue.currentBorrower = move(bookQueue.QueueOfUsers.front());
             bookQueue.QueueOfUsers.pop_front();
         };
+        string printBookStatus() {
+            if (Status == bookStatus::TERSEDIA) {
+                return "Tersedia";
+            } else {
+                return "Dipinjam";
+            };
+        };
+
 
         ~Book() {};
 };
@@ -185,11 +206,3 @@ struct bookQueues {
     deque<unique_ptr<User>> QueueOfUsers;
 };
 
-
-string printBookStatus(Book book) {
-    if (book.Status == bookStatus::TERSEDIA) {
-        return "Tersedia";
-    } else {
-        return "Dipinjam";
-    };
-}
