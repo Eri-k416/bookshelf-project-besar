@@ -2,6 +2,7 @@
 #include "user.hpp"
 #include "bookshelf.hpp"
 #include "userlist.hpp"
+#include <cstdlib>
 
 vector<int> hari_dalam_bulan = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
@@ -168,16 +169,111 @@ int Bookshelf::getBookIndex(int id) {
     } else {
         return -1;
     };
-}
+};
 
-// --- MAIN FUNCTION ---
+// terminal UI
+string adminPass = "admin123";
+void header() {
+    cout << "=====================================================================================================================\n";
+    cout << "\t\t\t\t\t   ZARIMAN BOOKSHELF APP\n";
+    cout << "\t\t\t\t 'library of alexandria got nothing on this'\n";
+    cout << "\t\t\t\t\t -Erik, Coder of this program  \n\n";
+    cout << "=====================================================================================================================\n";
+
+};
+void clearScreen() {
+    #ifdef _WIN32
+        system("cls"); // windows
+    #else
+        system("clear"); // linux/macOS
+    #endif
+};
+void borrowScreen() {
+    string statusPrint;
+    header();
+    cout << endl << endl;
+    
+    cout << "| NO | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
+    cout << "\t\t\t\t\t\t\t\t\t\t\n";
+};
+void adminBook(vector<shared_ptr<Book>>& bookshelf) {
+    clearScreen();
+    header();
+
+    while (true) {
+        cout << "| NO | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
+        for (int i = 0; i < bookshelf.size() < 10? bookshelf.size() : 10; i++) {
+            string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
+            string idshow = to_string(bookshelf[i]->Id).length() == 1? "0" + to_string(bookshelf[i]->Id) : to_string(bookshelf[i]->Id);
+        cout << "| " << noshow << " |";
+        cout << "| " << idshow << " |";
+        cout << "| " << idshow << " |";
+        };
+    }
+};
+void adminPanel() {
+    string adminPassInput;
+    clearScreen();
+    header();
+
+    while (true) {
+        cout << "Masukkan password admin (q untuk quit): \n";
+        cin >> adminPassInput;
+
+        if (adminPassInput != adminPass) {
+            cout << "Coba ulang";
+        } else {
+
+        };
+    };
+};
+
+// main finally GOD DAMN THAT TOOK SO FKIN LONG
 int main() {
-    cout << "god help me please";
-    // Now you can start instantiating objects!
-    // Example:
-    // Bookshelf library;
-    // UserList patrons;
-    // auto book1 = make_shared<Book>(library, "123", "Title", "Author", 2023);
-    // auto user1 = make_shared<User>(patrons, "John Doe", "01122025");
-    // patrons.addUser(user1);
-}
+    cout << "god help me please\n\n";
+    Bookshelf library;
+    UserList patrons;
+    
+    int userChoice;
+    
+    string shutdownConfirm;
+    
+    // screen loop
+
+    while (true) {
+        header();
+        
+        cout << "Pilih menu : \n";
+        cout << "1. Dashboard Peminjaman\n";
+        cout << "2. Admin Panel\n";
+        cout << "3. Shutdown System (HATI-HATI)\n\n";
+        while (true) {
+            cout << "Ketik pilihan : ";
+            cin >> userChoice;
+
+            if (userChoice == 1) {
+                borrowScreen();
+                break;
+            } else if (userChoice == 2) {
+                break;
+            } else if (userChoice == 3) {
+                break;
+            } else {
+                cout << "Pilihan tidak valid! Ketik ulang.\n";
+            };
+        };
+        if (userChoice == 3) {
+            clearScreen();
+            header();
+            cout << "Apakah anda yakin untuk mematikan sistem?\nSeluruh data peminjam dan buku akan hilang, apakah anda yakin?\nEnter password admin untuk mematikan : ";
+            cin >> shutdownConfirm;
+
+            if (shutdownConfirm == adminPass) {
+                break;
+            };
+            clearScreen();
+        };
+        
+    };
+    return 0;
+};
