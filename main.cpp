@@ -162,7 +162,6 @@ int Bookshelf::getBookIndex(int id) {
     });
 
     if (it != bookshelf.end()) {
-        // Calculate the index using std::distance
         int index = distance(bookshelf.begin(), it);
         return index;
         
@@ -171,14 +170,39 @@ int Bookshelf::getBookIndex(int id) {
     };
 };
 
+void Bookshelf::deleteBook(int id) {
+    int index = getBookIndex(id);
+    if (index == -1) {
+        return;
+    };
+    shared_ptr<Book> bookToDelete = bookshelf[index];
+
+    if (bookToDelete->bookQueue.currentBorrower) {
+        bookToDelete->emptyBookBorrower();
+
+        bookToDelete->bookQueue.currentBorrower->userBook.borrowedBook.reset(); 
+
+        bookToDelete->emptyBookBorrower();
+    };
+    if (!bookToDelete->bookQueue.QueueOfUsers.empty()) {
+        for (shared_ptr<User> user : bookToDelete->bookQueue.QueueOfUsers) {
+            user->userBook.queuingBook.reset();
+        };
+        bookToDelete->bookQueue.QueueOfUsers.clear();
+    };
+
+    bookshelf.erase(bookshelf.begin() + index);
+};
+
 // terminal UI
+string shutdownConfirm;
 string adminPass = "admin123";
 void header() {
-    cout << "=====================================================================================================================\n";
-    cout << "\t\t\t\t\t   ZARIMAN BOOKSHELF APP\n";
-    cout << "\t\t\t\t 'library of alexandria got nothing on this'\n";
-    cout << "\t\t\t\t\t -Erik, Coder of this program  \n\n";
-    cout << "=====================================================================================================================\n";
+    cout << "=========================================================================================================================================================\n";
+    cout << "\t\t\t\t\t\t\t   ZARIMAN BOOKSHELF APP\n";
+    cout << "\t\t\t\t\t\t 'library of alexandria got nothing on this'\n";
+    cout << "\t\t\t\t\t\t\t -Erik, Coder of this program  \n\n";
+    cout << "==========================================================================================================================================================\n";
 
 };
 void clearScreen() {
@@ -188,6 +212,25 @@ void clearScreen() {
         system("clear"); // linux/macOS
     #endif
 };
+string countBlankSpace(string& str) {
+    string returnString;
+    for (int i = 0; i < 57-(static_cast<int>(str.length())); i++) {
+        returnString = returnString + " ";
+    };
+
+    return returnString;
+};
+template <typename T>
+void getValidatedInput(T& variable, const string& prompt = "Enter your choice: ") {
+    cout << prompt;
+    
+    while (!(cin >> variable)) {
+        cout << "Invalid input. Please enter the correct format: ";
+        cin.clear();
+        cin.ignore(10000, '\n');
+    }
+}
+
 void borrowScreen() {
     string statusPrint;
     header();
@@ -197,22 +240,35 @@ void borrowScreen() {
     cout << "\t\t\t\t\t\t\t\t\t\t\n";
 };
 void adminBook(vector<shared_ptr<Book>>& bookshelf) {
+    // int page = 1;
+    int bookLeftToShow = bookshelf.size();
+    
     clearScreen();
     header();
 
     while (true) {
-        cout << "| NO | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
-        for (int i = 0; i < bookshelf.size() < 10? bookshelf.size() : 10; i++) {
-            string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
-            string idshow = to_string(bookshelf[i]->Id).length() == 1? "0" + to_string(bookshelf[i]->Id) : to_string(bookshelf[i]->Id);
-        cout << "| " << noshow << " |";
-        cout << "| " << idshow << " |";
-        cout << "| " << idshow << " |";
-        };
-    }
+        cout << "| NO | ID |      ISBN      | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
+        // for (int i = (page-1)*10; bookLeftToShow < 10? bookLeftToShow : 10; i++) {
+        // shared_ptr<Book>& currentBook = bookshelf[i];
+        // string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
+        // string idshow = to_string(currentBook->Id).length() == 1? "0" + to_string(currentBook->Id) : to_string(currentBook->Id);
+        // cout << "| " << noshow << " |";
+        // cout << "| " << idshow << " |";
+        // cout << "| " << currentBook->Isbn << " |";
+        // cout << "| " << ((currentBook->Title.length() > 54)? currentBook->Title.substr(0, 54) + "..." : currentBook->Title + countBlankSpace(currentBook->Title)) << " | ";
+        // cout << "| " << currentBook->Author << " |";
+        // cout << "| " << currentBook->Year << " |";
+        // if (currentBook->) {}
+        // };
+
+        break;
+    };
+
+    cout << bookLeftToShow << endl;
 };
-void adminPanel() {
+void adminPanel(Bookshelf& bookshelf) {
     string adminPassInput;
+    int adminChoice;
     clearScreen();
     header();
 
@@ -220,10 +276,51 @@ void adminPanel() {
         cout << "Masukkan password admin (q untuk quit): \n";
         cin >> adminPassInput;
 
-        if (adminPassInput != adminPass) {
-            cout << "Coba ulang";
-        } else {
+        if (adminPassInput == adminPass) {
+            while (true) {
+                cout << "Pilih menu admin: \n";
+                cout << "1. Dashboard Buku\n";
+                cout << "2. Dashboard User\n";
+                cout << "3. Ganti password admin\n";
+                cout << "4. Shutdown System (HATI-HATI)\n";
+                cout << "9. Kembali\n\n";
 
+                getValidatedInput(adminChoice, "Ketik Pilihan: ");
+
+                if (adminChoice == 1) {
+                    adminBook(bookshelf.bookshelf);
+                } else if (adminChoice == 2) {
+
+                } else if (adminChoice == 3) {
+                    string adminPassConfirm;
+                    while (adminPassConfirm != "q") {
+                        clearScreen();
+                        header();
+
+                        getValidatedInput(adminPassConfirm, "Masukkan password admin lama (q untuk quit): ");
+
+                        if (adminPassConfirm == adminPass) {
+                            cout << "Masukkan password baru : ";
+                            getValidatedInput(adminPass, "Ketik Pilihan: ");
+                        } else {
+                            cout << "Password salah, coba ulang! \n";
+                        }
+                    }
+
+                } else if (adminChoice == 4) {
+                    clearScreen();
+                    header();
+
+                    getValidatedInput(shutdownConfirm, "Apakah anda yakin untuk mematikan sistem?\nSeluruh data peminjam dan buku akan hilang, apakah anda yakin?\nEnter password admin untuk mematikan : ");
+
+                    if (shutdownConfirm == adminPass) {
+                        return;
+                    };
+                    clearScreen();
+                } else if (adminChoice == 9) {
+                    return;
+                };
+            };
         };
     };
 };
@@ -236,43 +333,32 @@ int main() {
     
     int userChoice;
     
-    string shutdownConfirm;
-    
     // screen loop
 
     while (true) {
+        clearScreen();
         header();
         
         cout << "Pilih menu : \n";
         cout << "1. Dashboard Peminjaman\n";
         cout << "2. Admin Panel\n";
-        cout << "3. Shutdown System (HATI-HATI)\n\n";
         while (true) {
-            cout << "Ketik pilihan : ";
-            cin >> userChoice;
+            getValidatedInput(shutdownConfirm, "Ketik pilihan : ");
 
             if (userChoice == 1) {
                 borrowScreen();
                 break;
             } else if (userChoice == 2) {
-                break;
-            } else if (userChoice == 3) {
+                adminPanel(library);
                 break;
             } else {
                 cout << "Pilihan tidak valid! Ketik ulang.\n";
-            };
-        };
-        if (userChoice == 3) {
-            clearScreen();
-            header();
-            cout << "Apakah anda yakin untuk mematikan sistem?\nSeluruh data peminjam dan buku akan hilang, apakah anda yakin?\nEnter password admin untuk mematikan : ";
-            cin >> shutdownConfirm;
-
-            if (shutdownConfirm == adminPass) {
                 break;
             };
-            clearScreen();
         };
+        if (shutdownConfirm == adminPass) {
+            break;
+        }
         
     };
     return 0;
