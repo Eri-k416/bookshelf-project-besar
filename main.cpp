@@ -75,32 +75,34 @@ Book::Book(Bookshelf& bookshelfTether, string isbn, string title, string author,
     Title = title;
     Author = author;
     Year = year;
-}
-
+};
+void Book::editBook(string isbn, string title, string author, int year) {
+    Isbn = isbn;
+    Title = title;
+    Author = author;
+    Year = year;
+};
 void Book::updateBookQueues(shared_ptr<User> user) {
     if (!bookQueue.currentBorrower) {
         bookQueue.currentBorrower = user;
     } else {
         bookQueue.QueueOfUsers.push_back(user);
     };
-}
-
+};
 void Book::emptyBookBorrower() {
     bookQueue.currentBorrower.reset();
-}
-
+};
 void Book::queueAdvance() {
     bookQueue.currentBorrower.swap(bookQueue.QueueOfUsers.front());
     bookQueue.QueueOfUsers.pop_front();
-}
-
+};
 string Book::printBookStatus() {
     if (Status == bookStatus::TERSEDIA) {
         return "Tersedia";
     } else {
         return "Dipinjam";
     };
-}
+};
 
 Book::~Book() {}
 
@@ -169,7 +171,6 @@ int Bookshelf::getBookIndex(int id) {
         return -1;
     };
 };
-
 void Bookshelf::deleteBook(int id) {
     int index = getBookIndex(id);
     if (index == -1) {
@@ -239,34 +240,145 @@ void borrowScreen() {
     cout << "| NO | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
     cout << "\t\t\t\t\t\t\t\t\t\t\n";
 };
-void adminBook(vector<shared_ptr<Book>>& bookshelf) {
-    // int page = 1;
-    int bookLeftToShow = bookshelf.size();
+
+void showBookDetail(vector<shared_ptr<Book>>& bookshelf, int id) {
+    clearScreen();
+    header();
+
+    shared_ptr<Book>& bookToShow = bookshelf[id];
+    int userChoice;
     
+    cout << "Id buku: " << bookToShow->Id << endl;
+    cout << "ISBN buku: " << bookToShow->Isbn << endl;
+    cout << "Judul buku: " << bookToShow->Title << endl;
+    cout << "Penulis buku: " << bookToShow->Author << endl;
+    cout << "Tahun Terbit buku: " << bookToShow->Year<< endl;
+    cout << "Status buku: " << bookToShow->printBookStatus() << endl;
+    if (!bookToShow->bookQueue.QueueOfUsers.empty()) {
+        cout << "Antrean : (" << bookToShow->bookQueue.QueueOfUsers.size() << " )\n";
+        for (int i = 0; i < bookToShow->bookQueue.QueueOfUsers.size(); i++) {
+            shared_ptr<User>& currentUserToShow = bookToShow->bookQueue.QueueOfUsers[i];
+            cout << "\t " << (i+1) << ". " << currentUserToShow->Id << ": " << currentUserToShow->Name << endl;
+        };
+    };
+
+    cout << "Ketik pilihan aksi terhadap buku ini : \n" << endl;
+    cout << "1. Edit buku\n";
+    cout << "2. Paksa majukan antrean\n";
+    cout << "3. Paksa hapus peminjam\n";
+    cout << "9. Kembali\n\n";
+    while (true) {
+        getValidatedInput(userChoice, "Ketik Pilihan : ");
+
+        if (userChoice == 1) {
+            string isbn;
+            string title;
+            string author;
+            int year;
+
+            cout << "ISBN buku: " << bookToShow->Isbn << endl;
+            getValidatedInput(isbn, "Masukkan ISBN buku yang baru : ");
+            cout << "Judul buku: " << bookToShow->Title << endl;
+            getValidatedInput(title, "Masukkan Judul buku yang baru : ");
+            cout << "Penulis buku: " << bookToShow->Author << endl;
+            getValidatedInput(author, "Masukkan Penulis buku yang baru : ");
+            cout << "Tahun Terbit buku: " << bookToShow->Year << endl;
+            getValidatedInput(year, "Masukkan Tahun buku yang baru : ");
+
+            bookToShow->editBook(isbn, title, author, year);
+
+            break;
+        } else if (userChoice == 2) {
+            bookToShow->queueAdvance();
+
+            break;
+        } else if (userChoice == 3) {
+            bookToShow->emptyBookBorrower();
+
+            break;
+        } else if (userChoice == 9) {
+            return;
+        } else {
+            cout << "Pilihan tidak valid! Coba ulang!";   
+        };
+    };
+};
+void adminCreateBook(Bookshelf& bookshelfTether) {
+    string isbn;
+    string title;
+    string author;
+    int year;
+    getValidatedInput(isbn, "Masukkan ISBN buku yang baru : ");
+    getValidatedInput(title, "Masukkan Judul buku yang baru : ");
+    getValidatedInput(author, "Masukkan Penulis buku yang baru : ");
+    getValidatedInput(year, "Masukkan Tahun buku yang baru : ");
+
+    bookshelfTether.addBook(make_shared<Book>(bookshelfTether, isbn, title, author, year));
+
+};
+void adminBooks(Bookshelf& bookshelf) {
+    int page = 1;
+    int bookLeftToShow = bookshelf.bookshelf.size();
+    string userChoice;
+
     clearScreen();
     header();
 
     while (true) {
         cout << "| NO | ID |      ISBN      | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
-        // for (int i = (page-1)*10; bookLeftToShow < 10? bookLeftToShow : 10; i++) {
-        // shared_ptr<Book>& currentBook = bookshelf[i];
-        // string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
-        // string idshow = to_string(currentBook->Id).length() == 1? "0" + to_string(currentBook->Id) : to_string(currentBook->Id);
-        // cout << "| " << noshow << " |";
-        // cout << "| " << idshow << " |";
-        // cout << "| " << currentBook->Isbn << " |";
-        // cout << "| " << ((currentBook->Title.length() > 54)? currentBook->Title.substr(0, 54) + "..." : currentBook->Title + countBlankSpace(currentBook->Title)) << " | ";
-        // cout << "| " << currentBook->Author << " |";
-        // cout << "| " << currentBook->Year << " |";
-        // if (currentBook->) {}
-        // };
+        for (int i = (page-1)*10; bookLeftToShow < 10? bookLeftToShow : 10; i++) {
+            shared_ptr<Book>& currentBook = bookshelf.bookshelf[i];
+            string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
+            string idshow = to_string(currentBook->Id).length() == 1? "0" + to_string(currentBook->Id) : to_string(currentBook->Id);
+            cout << "| " << noshow << " |";
+            cout << "| " << idshow << " |";
+            cout << "| " << currentBook->Isbn << " |";
+            cout << "| " << ((currentBook->Title.length() > 54)? currentBook->Title.substr(0, 54) + "..." : currentBook->Title + countBlankSpace(currentBook->Title)) << " | ";
+            cout << "| " << currentBook->Author << " |";
+            cout << "| " << currentBook->Year << " |";
+            cout << "| " << currentBook->printBookStatus() << " |";
+            cout << "| " << currentBook->bookQueue.QueueOfUsers.size() << " |";
+        };
 
-        break;
+        cout << endl << endl;
+        cout << "Ketik no. buku untuk melihat detail buku lebih lanjut, atau ketik pilihan lainnya dibawah berikut : \n";
+        cout << "a. Tambah Buku\n";
+        cout << "b. Hapus Buku\n";
+        cout << "c. Kembali\n";
+
+        if (page != bookLeftToShow) {
+            cout << "x. Halaman berikutnya\n";
+        };
+        if (page != 1) {
+            cout << "z. Halaman sebelumnya\n";
+        };
+
+        cin >> userChoice;
+        if (typeid(userChoice) == typeid(int)) {
+            showBookDetail(bookshelf.bookshelf, stoi(userChoice));
+        } else if (userChoice == "a") {
+            adminCreateBook(bookshelf);
+        } else if (userChoice == "b") {
+            int bookToDeleteIndex;
+            getValidatedInput(bookToDeleteIndex, "Hapus buku ke : ");
+            bookshelf.deleteBook(bookToDeleteIndex);
+
+        } else if (userChoice == "c") {
+            return;
+        };
     };
 
     cout << bookLeftToShow << endl;
 };
-void adminPanel(Bookshelf& bookshelf) {
+void adminUsers(UserList& patrons) {
+    int page = 1;
+    int userLeftToShow = patrons.Users.size();
+    cout << "| NO | ID | \t\t NAMA \t\t |   STATUS   |\t   PINJAM/ANTRI   \t|\n";
+    for (int i = (page-1)*10; userLeftToShow < 10? userLeftToShow : 10; i++) {
+        shared_ptr<User>& currentBook = patrons.Users[i];
+    };
+};
+void adminPanel(Bookshelf& bookshelf, UserList& patrons) {
     string adminPassInput;
     int adminChoice;
     clearScreen();
@@ -288,9 +400,9 @@ void adminPanel(Bookshelf& bookshelf) {
                 getValidatedInput(adminChoice, "Ketik Pilihan: ");
 
                 if (adminChoice == 1) {
-                    adminBook(bookshelf.bookshelf);
+                    adminBooks(bookshelf);
                 } else if (adminChoice == 2) {
-
+                    adminUsers(patrons);
                 } else if (adminChoice == 3) {
                     string adminPassConfirm;
                     while (adminPassConfirm != "q") {
@@ -349,11 +461,10 @@ int main() {
                 borrowScreen();
                 break;
             } else if (userChoice == 2) {
-                adminPanel(library);
+                adminPanel(library, patrons);
                 break;
             } else {
                 cout << "Pilihan tidak valid! Ketik ulang.\n";
-                break;
             };
         };
         if (shutdownConfirm == adminPass) {

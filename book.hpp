@@ -22,6 +22,7 @@ public:
     Book(Bookshelf& bookshelfTether, string isbn, string title, string author, int year);
 
     // Methods
+    void editBook(string isbn, string title, string author, int year);
     void updateBookQueues(shared_ptr<User> user);
     void emptyBookBorrower();
     void queueAdvance();
