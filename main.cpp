@@ -3,6 +3,12 @@
 #include "bookshelf.hpp"
 #include "userlist.hpp"
 #include <cstdlib>
+#include <cctype>
+#include <stdexcept>
+#include <limits>
+#include <thread> 
+#include <chrono>
+using namespace std;
 
 vector<int> hari_dalam_bulan = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
@@ -29,16 +35,26 @@ int kalkulasi_hari(string tanggal) {
 
     tabulasi_hari += hari;
     return tabulasi_hari;
-}
+};
+
+bool isStringDigit(string str) {
+    for (char& i : str) {
+        if (!isdigit(i)) {
+            return false;
+        };
+    };
+
+    return true;
+};
 
 // user class
-User::User(UserList& userListTether, string name, string date) {
-    Id = userListTether.userid++;
+User::User(int& userIdTether, string name, string date) {
+    Id = userIdTether++;
     Name = name;
-    returnDate = date;
+    borrowDate = date;
 }
 
-void User::updateUserBooks(shared_ptr<Book> book) {
+void User::updateUserBooks(shared_ptr<Book>& book) {
     if (!userBook.borrowedBook) {
         userBook.borrowedBook = book;
     } else if (!userBook.queuingBook) {
@@ -46,12 +62,16 @@ void User::updateUserBooks(shared_ptr<Book> book) {
     };
 }
 
+void User::queueAdvanceBook() {
+    userBook.borrowedBook.swap(userBook.queuingBook);
+};
+
 int User::countBookFine(string nowDate) {
-    int fine = 1;
-    int days = kalkulasi_hari(nowDate) - kalkulasi_hari(returnDate);
+    int fine = 0;
+    int days = kalkulasi_hari(nowDate) - kalkulasi_hari(borrowDate);
 
     if (days > 3) {
-        fine *= 5000;
+        fine = days*5000;
     };
     return fine;
 }
@@ -69,8 +89,8 @@ string User::printUserStatus() {
 User::~User() {}
 
 // book class
-Book::Book(Bookshelf& bookshelfTether, string isbn, string title, string author, int year) {
-    Id = bookshelfTether.bookId++;
+Book::Book(int& bookIdTether, string isbn, string title, string author, int year) {
+    Id = bookIdTether++;
     Isbn = isbn;
     Title = title;
     Author = author;
@@ -107,8 +127,8 @@ string Book::printBookStatus() {
 Book::~Book() {}
 
 // userlist class
-void UserList::addUser(shared_ptr<User> user) {
-    Users.push_back(user);
+void UserList::addUser(string name, string returnDate) {
+    Users.push_back(make_shared<User>(userid, name, returnDate));
 }
 
 int UserList::getUserIndex(int id) {
@@ -123,8 +143,7 @@ int UserList::getUserIndex(int id) {
     } else {
         return -1;
     };
-}
-
+};
 void UserList::deleteUser(int id) {
     int index = getUserIndex(id);
     if (index == -1) {
@@ -148,14 +167,27 @@ void UserList::deleteUser(int id) {
             queue.erase(it);
         };
         userToDelete->userBook.queuingBook.reset();
-    }
+    };
     
     Users.erase(Users.begin() + index);
-}
+};
+int UserList::getUserFromName(string str) {
+    auto it = find_if(Users.begin(), Users.end(), [&](shared_ptr<User> user) {
+        return user->Name == str;
+    });
+
+    if (it != Users.end()) {
+        int index = distance(Users.begin(), it);
+        return index;
+        
+    } else {
+        return -1;
+    };
+};
 
 // bookshelf class
-void Bookshelf::addBook(shared_ptr<Book> book) {
-    bookshelf.push_back(book);
+void Bookshelf::addBook(string isbn, string title, string author, int year) {
+    bookshelf.push_back(make_shared<Book>(bookId, isbn, title, author, year));
 }
 
 int Bookshelf::getBookIndex(int id) {
@@ -232,20 +264,260 @@ void getValidatedInput(T& variable, const string& prompt = "Enter your choice: "
     }
 }
 
-void borrowScreen() {
-    string statusPrint;
-    header();
-    cout << endl << endl;
+
+void showBookDetails(shared_ptr<Book>& bookToShow) {
+    cout << "ISBN buku: " << bookToShow->Isbn << endl;
+    cout << "Judul buku: " << bookToShow->Title << endl;
+    cout << "Penulis buku: " << bookToShow->Author << endl;
+    cout << "Tahun Terbit buku: " << bookToShow->Year << endl;
+    cout << "Status buku: " << bookToShow->printBookStatus() << endl;
+    cout << "Antrean : (" << bookToShow->bookQueue.QueueOfUsers.size() << " )\n";
+};
+void showBook(Bookshelf& bookshelf, UserList& patrons, int idx) {
+    try {
+        shared_ptr<Book>& bookToShow = bookshelf.bookshelf[idx];
+    } catch (out_of_range& e) {
+        return;
+    };
     
-    cout << "| NO | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
-    cout << "\t\t\t\t\t\t\t\t\t\t\n";
+    shared_ptr<Book>& bookToShow = bookshelf.bookshelf[idx];
+    int userChoice;
+    string name = "";
+    string date;
+    int idxUser;
+    int validateBorrowHandle;
+    bool caughtException = false;
+    
+    while (true) {
+        clearScreen();
+        header();
+
+        showBookDetails(bookToShow);
+
+        cout << "Ketik pilihan aksi terhadap buku ini : \n" << endl;
+        cout << "1. " <<((bookToShow->Status == bookStatus::TERSEDIA)? "Pinjam " : "Mengantri untuk ") << "Buku.\n";
+        cout << "9. Kembali\n\n";
+
+        getValidatedInput(userChoice, "Ketik pilihan : ");
+
+        while (userChoice == 1) {
+            clearScreen();
+            header();
+            cout << (bookToShow->Status == bookStatus::TERSEDIA)? "Buku tersedia, ingin meminjam?" : "Buku sedang dipinjan, ingin mengantri?";
+            cout << "1. " << ((bookToShow->Status == bookStatus::TERSEDIA)? "Pinjam " : "Mengantri ") << endl;
+            cout << "9. Kembali\n";
+            getValidatedInput(validateBorrowHandle, "Ketik Pilihan :");
+
+            if (validateBorrowHandle == 1) {
+                cout << "Masukkan nama peminjam : \n";
+                cin >> name;
+                while (name.length() > 100 || name.length() < 3) {
+                    cout << "Nama tidak boleh kurang dari 3 karakter atau lebih dari 100 karakter, coba lagi : \n";
+                    cin.clear();
+                    cin.ignore(10000, '\n');
+                    getline(cin, name);
+                };
+                cout << "Masukkan tanggal peminjaman (format DDMMYYYY) : \n";
+                cin >> date;
+                while (true) {
+                    if (date.length() != 8) {
+                        cout << "Panjang input tidak valid (harus 8 digit: DDMMYYYY), coba lagi: \n";
+                    } else {
+                        try {
+                            // kalo ada non-digit, error, tangkap
+                            // kalo keluar kapasitas int, error, tangkap (out of range)
+                            stoi(date);
+                            break; 
+                            
+                        } catch (const invalid_argument& e) {
+                            cout << "Input harus hanya digit (tidak mengandung karakter lain), coba lagi : \n";
+                            caughtException = true;
+                        } catch (const out_of_range& e) {
+                            cout << "Input terlalu panjang, coba lagi: \n";
+                            caughtException = true;
+                        };
+                    };
+
+                    if (!caughtException) {
+                        return;
+                    };
+                    
+                    caughtException = false;
+
+                    cin.clear();
+                    // membaca input hanya setelah linebreak
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    getline(cin, date);
+                };
+                
+                
+                if (patrons.getUserFromName(name) == -1) { //kalau tidak ketemu di database
+                    patrons.addUser(name, date);
+                    break;
+                };
+                idxUser = patrons.getUserFromName(name);
+
+                shared_ptr<User>& borrowOrQueueUser = patrons.Users[idxUser];
+                if (!(borrowOrQueueUser->userBook.borrowedBook && borrowOrQueueUser->userBook.queuingBook) && (borrowOrQueueUser->userBook.borrowedBook != bookToShow)) {
+                    borrowOrQueueUser->updateUserBooks(bookToShow);
+
+                    if (!bookToShow->bookQueue.currentBorrower) {
+                        borrowOrQueueUser->borrowDate = date;
+                        bookToShow->bookQueue.currentBorrower = borrowOrQueueUser;
+                    } else {
+                        bookToShow->bookQueue.QueueOfUsers.push_back(borrowOrQueueUser);
+                    };
+
+                    return;
+                } else {
+                    cout << "Gagal menambahkan user. Hal ini dikarenakan user sudah meminjam dan mengantri.\n\n";
+                };
+            } else if (validateBorrowHandle == 9) {
+                break;
+            } else {
+                cout << "Pilihan tidak valid!.\n\n";
+            };
+        }; 
+        if (userChoice == 9) {
+            return;
+        } else {
+            cout << "Pilihan tidak valid\n";
+        };
+    };
+};
+void takeFromQueue(Bookshelf& bookshelf, UserList& patrons) {
+    string username;
+    string borrowdate;
+    bool caughtException = false;
+    
+    clearScreen();
+    header();
+    cout << endl;
+
+    cout << "Masukkan nama peminjam (q untuk quit): \n";
+    cin >> username;
+    if (username == "q") {
+        return;
+    };
+
+    while (patrons.getUserFromName(username) == -1) {
+        cout << "User tidak ada dalam data user, coba lagi : \n";
+        cin.clear();
+        cin.ignore(10000, '\n');
+        getline(cin, username);
+    };
+    if (username == "q") {
+        return;
+    };
+
+    cout << "Masukkan tanggal peminjaman (format DDMMYYYY) : \n";
+    cin >> borrowdate;
+    while (true) {
+        if (borrowdate.length() != 8) {
+            cout << "Panjang input tidak valid (harus 8 digit: DDMMYYYY), coba lagi: \n";
+        } else {
+            try {
+                // kalo ada non-digit, error, tangkap
+                // kalo keluar kapasitas int, error, tangkap (out of range)
+                stoi(borrowdate);
+                break; 
+                
+            } catch (const invalid_argument& e) {
+                cout << "Input harus hanya digit (tidak mengandung karakter lain), coba lagi : \n";
+                caughtException = true;
+            } catch (const out_of_range& e) {
+                cout << "Input terlalu panjang, coba lagi: \n";
+                caughtException = true;
+            };
+
+            if (!caughtException) {
+                break;
+            };
+        };
+
+        caughtException = false;
+        
+        cin.clear();
+        // membaca input hanya setelah linebreak
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        getline(cin, borrowdate);
+    };
+
+    shared_ptr<User>& queuingUser = patrons.Users[patrons.getUserFromName(username)];
+
+    if (queuingUser->userBook.borrowedBook) {
+        cout << "User ini sedang meminjam buku...\n";
+
+        this_thread::sleep_for(chrono::seconds(3)); // pause for 3 secs
+
+        return;
+    } else if (!queuingUser->userBook.queuingBook) {
+        cout << "User ini sedang tidak mengantri...";
+        this_thread::sleep_for(chrono::seconds(3)); // pause for 3 secs
+
+        return;
+    } else {
+        if (queuingUser == queuingUser->userBook.queuingBook->bookQueue.QueueOfUsers.front()) {
+
+        }
+    };
+
+
+
+
+};
+void borrowScreen(Bookshelf& bookshelf, UserList& patrons) {
+
+    int page = 1;
+    int bookLeftToShow = bookshelf.bookshelf.size();
+    string userChoice;
+    clearScreen();
+    header(); 
+    cout << endl << endl;
+
+    while (true) {
+        cout << "| NO | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
+        cout << "\n";
+        for (int i = (page-1)*10; bookLeftToShow < 10? bookLeftToShow : 10; i++) {
+            shared_ptr<Book>& currentBook = bookshelf.bookshelf[i];
+            string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
+            cout << "| " << noshow << " |";
+            cout << "| " << ((currentBook->Title.length() > 54)? currentBook->Title.substr(0, 54) + "..." : currentBook->Title + countBlankSpace(currentBook->Title)) << " | ";
+            cout << "| " << currentBook->Author << " |";
+            cout << "| " << currentBook->Year << " |";
+            cout << "| " << currentBook->printBookStatus() << " |";
+            cout << "| " << currentBook->bookQueue.QueueOfUsers.size() << " |";
+        };
+
+        cout << endl << endl;
+        cout << "Ketik no. buku untuk meminjam, atau ketik pilihan lainnya dibawah berikut : \n";
+        cout << "a. Ambil buku dari antrean\n";
+        cout << "b. Kembalikan buku\n";
+        cout << "c. Kembali\n\n";
+        
+        getValidatedInput(userChoice, "Ketik Pilihan : ");
+
+        if (isStringDigit(userChoice)) {
+            showBook(bookshelf, patrons, stoi(userChoice));
+            continue;
+        } else if (userChoice == "a") {
+            takeFromQueue(bookshelf, patrons);
+        };
+
+    };
+    
 };
 
-void showBookDetail(vector<shared_ptr<Book>>& bookshelf, int id) {
+
+
+
+void showBookAdmin(vector<shared_ptr<Book>>& bookshelf, int idx) {
     clearScreen();
     header();
 
-    shared_ptr<Book>& bookToShow = bookshelf[id];
+    shared_ptr<Book>& bookToShow = bookshelf[idx];
     int userChoice;
     
     cout << "Id buku: " << bookToShow->Id << endl;
@@ -254,8 +526,9 @@ void showBookDetail(vector<shared_ptr<Book>>& bookshelf, int id) {
     cout << "Penulis buku: " << bookToShow->Author << endl;
     cout << "Tahun Terbit buku: " << bookToShow->Year<< endl;
     cout << "Status buku: " << bookToShow->printBookStatus() << endl;
+    cout << "Peminjam buku : " << bookToShow->bookQueue.currentBorrower? bookToShow->bookQueue.currentBorrower->Name : "Tidak ada";
+    cout << "Antrean : (" << bookToShow->bookQueue.QueueOfUsers.size() << " )\n";
     if (!bookToShow->bookQueue.QueueOfUsers.empty()) {
-        cout << "Antrean : (" << bookToShow->bookQueue.QueueOfUsers.size() << " )\n";
         for (int i = 0; i < bookToShow->bookQueue.QueueOfUsers.size(); i++) {
             shared_ptr<User>& currentUserToShow = bookToShow->bookQueue.QueueOfUsers[i];
             cout << "\t " << (i+1) << ". " << currentUserToShow->Id << ": " << currentUserToShow->Name << endl;
@@ -313,7 +586,7 @@ void adminCreateBook(Bookshelf& bookshelfTether) {
     getValidatedInput(author, "Masukkan Penulis buku yang baru : ");
     getValidatedInput(year, "Masukkan Tahun buku yang baru : ");
 
-    bookshelfTether.addBook(make_shared<Book>(bookshelfTether, isbn, title, author, year));
+    bookshelfTether.addBook(isbn, title, author, year);
 
 };
 void adminBooks(Bookshelf& bookshelf) {
@@ -326,6 +599,7 @@ void adminBooks(Bookshelf& bookshelf) {
 
     while (true) {
         cout << "| NO | ID |      ISBN      | \t\t\t\t JUDUL \t\t\t\t |\t   AUTHOR   \t| TAHUN |  STATUS  | ANTREAN |\n";
+        cout << endl;
         for (int i = (page-1)*10; bookLeftToShow < 10? bookLeftToShow : 10; i++) {
             shared_ptr<Book>& currentBook = bookshelf.bookshelf[i];
             string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
@@ -341,7 +615,7 @@ void adminBooks(Bookshelf& bookshelf) {
         };
 
         cout << endl << endl;
-        cout << "Ketik no. buku untuk melihat detail buku lebih lanjut, atau ketik pilihan lainnya dibawah berikut : \n";
+        cout << "Ketik no. buku untuk melihat atau edit detail buku lebih lanjut, atau ketik pilihan lainnya dibawah berikut : \n";
         cout << "a. Tambah Buku\n";
         cout << "b. Hapus Buku\n";
         cout << "c. Kembali\n";
@@ -355,20 +629,25 @@ void adminBooks(Bookshelf& bookshelf) {
 
         cin >> userChoice;
         if (typeid(userChoice) == typeid(int)) {
-            showBookDetail(bookshelf.bookshelf, stoi(userChoice));
+            showBookAdmin(bookshelf.bookshelf, stoi(userChoice));
         } else if (userChoice == "a") {
             adminCreateBook(bookshelf);
         } else if (userChoice == "b") {
-            int bookToDeleteIndex;
-            getValidatedInput(bookToDeleteIndex, "Hapus buku ke : ");
-            bookshelf.deleteBook(bookToDeleteIndex);
-
+            int bookToDeleteId;
+            getValidatedInput(bookToDeleteId, "Hapus ID buku ke : ");
+            bookshelf.deleteBook(bookToDeleteId);
         } else if (userChoice == "c") {
             return;
+        } else if (userChoice == "x") {
+            page++;
+            bookLeftToShow -= 10;
+        } else if (userChoice == "z") {
+            page--;
+            bookLeftToShow += 10;
+        } else {
+           cout << "Pilihan tidak valid"; 
         };
     };
-
-    cout << bookLeftToShow << endl;
 };
 void adminUsers(UserList& patrons) {
     int page = 1;
@@ -416,8 +695,8 @@ void adminPanel(Bookshelf& bookshelf, UserList& patrons) {
                             getValidatedInput(adminPass, "Ketik Pilihan: ");
                         } else {
                             cout << "Password salah, coba ulang! \n";
-                        }
-                    }
+                        };
+                    };
 
                 } else if (adminChoice == 4) {
                     clearScreen();
@@ -437,6 +716,9 @@ void adminPanel(Bookshelf& bookshelf, UserList& patrons) {
     };
 };
 
+
+
+
 // main finally GOD DAMN THAT TOOK SO FKIN LONG
 int main() {
     cout << "god help me please\n\n";
@@ -445,9 +727,9 @@ int main() {
     
     int userChoice;
     
-    // screen loop
+    // screen loop Pilihan tidak valid! Ketik ulang.
 
-    while (true) {
+    while (shutdownConfirm != adminPass) {
         clearScreen();
         header();
         
@@ -456,21 +738,17 @@ int main() {
         cout << "2. Admin Panel\n";
         while (true) {
             getValidatedInput(shutdownConfirm, "Ketik pilihan : ");
-
             if (userChoice == 1) {
-                borrowScreen();
+                borrowScreen(library, patrons);
                 break;
             } else if (userChoice == 2) {
                 adminPanel(library, patrons);
                 break;
             } else {
-                cout << "Pilihan tidak valid! Ketik ulang.\n";
+                cout << "\n";
             };
         };
-        if (shutdownConfirm == adminPass) {
-            break;
-        }
-        
     };
+
     return 0;
 };

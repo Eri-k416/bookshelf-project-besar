@@ -12,14 +12,15 @@ class User {
 public:
     int Id;
     string Name;
-    string returnDate; // DDMMYYYYY format
+    string borrowDate; // DDMMYYYYY format
     userBooks userBook;
 
     // Constructor
-    User(UserList& userListTether, string name, string date);
+    User(int& userIdTether, string name, string date);
 
     // Methods
-    void updateUserBooks(shared_ptr<Book> book);
+    void updateUserBooks(shared_ptr<Book>& book);
+    void queueAdvanceBook();
     int countBookFine(string nowDate);
     string printUserStatus();
     ~User();

@@ -1,6 +1,7 @@
 #ifndef USERLIST_HPP
 #define USERLIST_HPP
 
+#include <memory>
 #include "common.hpp"
 
 class UserList {
@@ -8,9 +9,10 @@ public:
     vector<shared_ptr<User>> Users;
     int userid = 0;
 
-    void addUser(shared_ptr<User> user);
+    void addUser(string name, string borrowDate);
     int getUserIndex(int id);
-    void deleteUser(int id); // This implementation is complex and will go in main.cpp
+    int getUserFromName(string str);
+    void deleteUser(int id); 
 };
 
 #endif

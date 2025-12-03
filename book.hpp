@@ -19,7 +19,7 @@ public:
     bookQueues bookQueue;
 
     // Constructor
-    Book(Bookshelf& bookshelfTether, string isbn, string title, string author, int year);
+    Book(int& bookIdTether, string isbn, string title, string author, int year);
 
     // Methods
     void editBook(string isbn, string title, string author, int year);
