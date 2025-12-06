@@ -15,17 +15,20 @@ public:
     string Title;
     string Author;
     int Year;
+    string createDate;
+    string lastEditDate = "";
     bookStatus Status = bookStatus::TERSEDIA;
     bookQueues bookQueue;
 
     // Constructor
-    Book(int& bookIdTether, string isbn, string title, string author, int year);
+    Book(int& bookIdTether, string isbn, string title, string author, int year, string createdate);
 
     // Methods
     void editBook(string isbn, string title, string author, int year);
     void updateBookQueues(shared_ptr<User> user);
     void emptyBookBorrower();
     void queueAdvance();
+    int findQueuingUserIndex(shared_ptr<User>& user);
     string printBookStatus();
     ~Book();
 };
