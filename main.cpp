@@ -568,7 +568,7 @@ void borrowScreen(Bookshelf& bookshelf, UserList& patrons) {
             cout << "| " << currentBook->Author;
             cout << "| " << currentBook->Year;
             cout << "| " << currentBook->printBookStatus();
-            cout << "| " << currentBook->bookQueue.QueueOfUsers.size() << " |";
+            cout << "| " << currentBook->bookQueue.QueueOfUsers.size() << " |" << endl;
         };
 
         cout << endl << endl;
@@ -719,7 +719,7 @@ void adminBooks(Bookshelf& bookshelf) {
             cout << " | " << currentBook->Author;
             cout << " | " << currentBook->Year;
             cout << " | " << currentBook->printBookStatus();
-            cout << " | " << currentBook->bookQueue.QueueOfUsers.size() << " |";
+            cout << " | " << currentBook->bookQueue.QueueOfUsers.size() << " |" << endl;
         };
 
         cout << endl << endl;
@@ -795,7 +795,7 @@ void adminUsers(UserList& patrons) {
 
             cout << "         | " << ((bookTitleDisplay.length() > 54) ? 
                     bookTitleDisplay.substr(0, 54) + "..." : 
-                    bookTitleDisplay + countBlankSpace(bookTitleDisplay)) << " | ";
+                    bookTitleDisplay + countBlankSpace(bookTitleDisplay)) << " | " << endl;
         };
 
         cout << endl << endl;
