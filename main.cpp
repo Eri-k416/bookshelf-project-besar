@@ -310,17 +310,13 @@ string getValidDate() {
 
     cout << "Masukkan tanggal peminjaman (format DDMMYYYY) : \n";
     cin >> date;
-    // Corrected logic for date input loop
     while (true) {
-        // 1. Length Check
         if (date.length() != 8) {
             cout << "Panjang input tidak valid (harus 8 digit: DDMMYYYY), coba lagi: \n";
-            // Read new input at the bottom of the loop
         } else {
-            // 2. Digit Check (stoi)
             try {
-                stoi(date); // If this succeeds, it's all digits
-                break;      // Success! Exit loop.
+                stoi(date);
+                break;
             } catch (const invalid_argument& e) {
                 cout << "Input harus hanya digit (tidak mengandung karakter lain), coba lagi : \n";
             } catch (const out_of_range& e) {
@@ -351,7 +347,7 @@ void showBook(Bookshelf& bookshelf, UserList& patrons, int idx) {
     // catch user inputting something not in the bookshelf list
     try {
         shared_ptr<Book>& bookToShow = bookshelf.bookshelf[idx];
-        cout << bookToShow->Isbn << "\n\n";
+        bookToShow->Id = bookToShow->Id;
     } catch (out_of_range& e) {
         return;
     };
@@ -567,11 +563,11 @@ void borrowScreen(Bookshelf& bookshelf, UserList& patrons) {
         for (int i = startIndex; i < endIndex; i++) {
             shared_ptr<Book>& currentBook = bookshelf.bookshelf[i];
             string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
-            cout << "| " << noshow << " |";
+            cout << "| " << noshow;
             cout << "| " << ((currentBook->Title.length() > 54)? currentBook->Title.substr(0, 54) + "..." : currentBook->Title + countBlankSpace(currentBook->Title)) << " | ";
-            cout << "| " << currentBook->Author << " |";
-            cout << "| " << currentBook->Year << " |";
-            cout << "| " << currentBook->printBookStatus() << " |";
+            cout << "| " << currentBook->Author;
+            cout << "| " << currentBook->Year;
+            cout << "| " << currentBook->printBookStatus();
             cout << "| " << currentBook->bookQueue.QueueOfUsers.size() << " |";
         };
 
@@ -696,7 +692,7 @@ void adminCreateBook(Bookshelf& bookshelfTether) {
     getValidatedString(title, "Masukkan Judul buku yang baru : ");
     getValidatedInput(author, "Masukkan Penulis buku yang baru : ");
     getValidatedInput(year, "Masukkan Tahun buku yang baru : ");
-    getValidatedInput(createDate, "Masukkan tanggal buku in masuk ke perpustakaan ini : ");
+    getValidatedInput(createDate, "Masukkan tanggal buku in masuk ke perpustakaan ini (format DDMMYYYY) : ");
 
     bookshelfTether.addBook(isbn, title, author, year, createDate);
 
@@ -714,16 +710,16 @@ void adminBooks(Bookshelf& bookshelf) {
         int endIndex = min(startIndex + 10, (int)bookshelf.bookshelf.size());
         for (int i = startIndex; i < endIndex; i++) {
             shared_ptr<Book>& currentBook = bookshelf.bookshelf[i];
-            string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
+            string noshow = to_string(i+1).length() == 1? "0" + to_string(i+1) : to_string(i+1);
             string idshow = to_string(currentBook->Id).length() == 1? "0" + to_string(currentBook->Id) : to_string(currentBook->Id);
-            cout << "| " << noshow << " |";
-            cout << "| " << idshow << " |";
-            cout << "| " << currentBook->Isbn << " |";
-            cout << "| " << ((currentBook->Title.length() > 54)? currentBook->Title.substr(0, 54) + "..." : currentBook->Title + countBlankSpace(currentBook->Title)) << " | ";
-            cout << "| " << currentBook->Author << " |";
-            cout << "| " << currentBook->Year << " |";
-            cout << "| " << currentBook->printBookStatus() << " |";
-            cout << "| " << currentBook->bookQueue.QueueOfUsers.size() << " |";
+            cout << "| " << noshow;
+            cout << " | " << idshow ;
+            cout << " | " << currentBook->Isbn;
+            cout << " | " << ((currentBook->Title.length() > 54)? currentBook->Title.substr(0, 54) + "..." : currentBook->Title + countBlankSpace(currentBook->Title));
+            cout << " | " << currentBook->Author;
+            cout << " | " << currentBook->Year;
+            cout << " | " << currentBook->printBookStatus();
+            cout << " | " << currentBook->bookQueue.QueueOfUsers.size() << " |";
         };
 
         cout << endl << endl;
@@ -741,7 +737,7 @@ void adminBooks(Bookshelf& bookshelf) {
 
         getValidatedInput(userChoice, "Ketik Pilihan: "); 
         if (isStringDigit(userChoice)) {
-            showBookAdmin(bookshelf.bookshelf, stoi(userChoice));
+            showBookAdmin(bookshelf.bookshelf, stoi(userChoice)-1);
         } else if (userChoice == "a") {
             adminCreateBook(bookshelf);
         } else if (userChoice == "b") {
@@ -781,13 +777,13 @@ void adminUsers(UserList& patrons) {
         cout << "| NO | ID | \t\t NAMA \t\t |   STATUS   | TANGGAL PEMINJAMAN |\t   PINJAM/ANTRI   \t|\n";
         for (int i = startIndex; i < endIndex; i++) {
             shared_ptr<User>& currentUser = patrons.Users[i];
-            string noshow = to_string(i).length() == 1? "0" + to_string(i) : to_string(i);
+            string noshow = to_string(i).length() == 1? "0" + to_string(i+1) : to_string(i+1);
             string idshow = to_string(currentUser->Id).length() == 1? "0" + to_string(currentUser->Id) : to_string(currentUser->Id);
 
-            cout << "| " << noshow << " |";
-            cout << "| " << idshow << " |";
-            cout << "| " << currentUser->printUserStatus() << " |";
-            cout << "|       " << currentUser->borrowDate << "       |";
+            cout << "| " << noshow;
+            cout << " | " << idshow;
+            cout << " | " << currentUser->printUserStatus();
+            cout << " |       " << currentUser->borrowDate;
 
             string bookTitleDisplay = "Tidak ada buku";
 
@@ -797,7 +793,7 @@ void adminUsers(UserList& patrons) {
                 bookTitleDisplay = currentUser->userBook.queuingBook->Title;
             }
 
-            cout << "| " << ((bookTitleDisplay.length() > 54) ? 
+            cout << "         | " << ((bookTitleDisplay.length() > 54) ? 
                     bookTitleDisplay.substr(0, 54) + "..." : 
                     bookTitleDisplay + countBlankSpace(bookTitleDisplay)) << " | ";
         };
@@ -922,6 +918,8 @@ void adminPanel(Bookshelf& bookshelf, UserList& patrons) {
 
         if (adminPassInput == adminPass) {
             while (true) {
+                clearScreen();
+                header();
                 cout << "Pilih menu admin: \n";
                 cout << "1. Dashboard Buku\n";
                 cout << "2. Dashboard User\n";
