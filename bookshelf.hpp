@@ -9,7 +9,7 @@ public:
     vector<shared_ptr<Book>> bookshelf;
     int bookId = 0;
 
-    void addBook(string isbn, string title, string author, int year);
+    void addBook(string isbn, string title, string author, int year, string createDate);
     int getBookIndex(int id);
     void deleteBook(int id);
 };
