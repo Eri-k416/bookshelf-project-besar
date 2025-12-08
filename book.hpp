@@ -28,7 +28,7 @@ public:
     void updateBookQueues(shared_ptr<User> user);
     void emptyBookBorrower();
     void queueAdvance();
-    int findQueuingUserIndex(shared_ptr<User>& user);
+    int findQueuingUserIndex(int id);
     string printBookStatus();
     ~Book();
 };

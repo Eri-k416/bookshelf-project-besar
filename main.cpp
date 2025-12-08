@@ -54,13 +54,7 @@ User::User(int& userIdTether, string name, string date) {
     borrowDate = date;
 };
 
-void User::updateUserBooks(shared_ptr<Book>& book) {
-    if (!(userBook.borrowedBook) && !(book->bookQueue.currentBorrower)) {
-        userBook.borrowedBook = book;
-    } else if (!userBook.queuingBook) {
-        userBook.queuingBook = book;
-    };
-};
+
 
 void User::queueAdvanceBook() {
     userBook.borrowedBook.swap(userBook.queuingBook);
@@ -69,6 +63,13 @@ void User::queueAdvanceBook() {
 void User::emptyBorrowedBook() {
     userBook.borrowedBook.reset();
     borrowDate = "";
+};
+void User::updateUserBooks(shared_ptr<Book>& book) {
+    if (!(userBook.borrowedBook) && !(book->bookQueue.currentBorrower) && (book->findQueuingUserIndex(Id) != -1)) {
+        userBook.borrowedBook = book;
+    } else if (!userBook.queuingBook) {
+        userBook.queuingBook = book;
+    };
 };
 
 int User::countBookFine(string nowDate) {
@@ -109,7 +110,7 @@ void Book::editBook(string isbn, string title, string author, int year) {
     Year = year;
 };
 void Book::updateBookQueues(shared_ptr<User> user) {
-    if (!(bookQueue.currentBorrower)) {
+    if (!(bookQueue.currentBorrower) && bookQueue.QueueOfUsers.empty()) {
         bookQueue.currentBorrower = user;
     } else {
         bookQueue.QueueOfUsers.push_back(user);
@@ -122,10 +123,10 @@ void Book::queueAdvance() {
     bookQueue.currentBorrower.swap(bookQueue.QueueOfUsers.front());
     bookQueue.QueueOfUsers.pop_front();
 };
-int Book::findQueuingUserIndex(shared_ptr<User>& queueUser) {
+int Book::findQueuingUserIndex(int id) {
     deque<shared_ptr<User>>& queueArray = bookQueue.QueueOfUsers;
     auto it = find_if(queueArray.begin(), queueArray.end(), [&](shared_ptr<User>& user) {
-        return user->Id == queueUser->Id;
+        return user->Id == id;
     });
 
     if (it != queueArray.end()) {
@@ -407,7 +408,7 @@ void showBook(Bookshelf& bookshelf, UserList& patrons, int idx) {
                     
                     borrowOrQueueUser->updateUserBooks(bookToShow);
 
-                    if (!(bookToShow->bookQueue.currentBorrower)) {
+                    if (!(bookToShow->bookQueue.currentBorrower) && bookToShow->bookQueue.QueueOfUsers.empty()) {
                         borrowOrQueueUser->borrowDate = date;
                         borrowOrQueueUser->Status = userStatus::MEMINJAM;
                         bookToShow->Status = bookStatus::DIPINJAM;
@@ -497,7 +498,7 @@ void takeFromQueue(UserList& patrons) {
 
             cout << "Berhasil meminjam buku!\n\n";
         } else {
-            cout << "Tidak dapat mengambil buku, anda ada di antrian : " << (queuingUser->userBook.queuingBook->findQueuingUserIndex(queuingUser) + 1) << endl;
+            cout << "Tidak dapat mengambil buku, anda ada di antrian : " << (queuingUser->userBook.queuingBook->findQueuingUserIndex(queuingUser->Id) + 1) << endl;
             
         };
 
@@ -507,6 +508,7 @@ void takeFromQueue(UserList& patrons) {
 void returnBook(UserList& patrons) {
     string username;
     string returnDate;
+    string lastBorrowDate;
     int denda;
     
     clearScreen();
@@ -548,17 +550,18 @@ void returnBook(UserList& patrons) {
 
     // logic
     denda = borrowingUser->countBookFine(returnDate);
+    lastBorrowDate = borrowingUser->borrowDate;
     borrowingUser->userBook.borrowedBook->Status = bookStatus::TERSEDIA;
     borrowingUser->userBook.borrowedBook->emptyBookBorrower();
     borrowingUser->emptyBorrowedBook();
 
-    if (!(borrowingUser->userBook.queuingBook)) {
+    if (borrowingUser->userBook.queuingBook) {
         borrowingUser->Status = userStatus::MENGANTRI;
     } else {
         borrowingUser->Status = userStatus::PENDING;
     };
 
-    cout << "Berhasil mengembalikan buku!\n";
+    cout << "Berhasil mengembalikan buku! \n Buku dipinjam pada " << lastBorrowDate << " dan di kembalikan pada tanggal" << returnDate << "(format DDMMYYYY)" << endl;
     cout << (denda < 5000? "Anda tidak dikenakan biaya untuk peminjaman ini." : "Anda telat " + to_string(denda/5000) + " hari. Anda dikenakan denda : Rp." + to_string(denda)) << endl;
     this_thread::sleep_for(chrono::seconds(10));
 };
@@ -604,7 +607,14 @@ void borrowScreen(Bookshelf& bookshelf, UserList& patrons) {
         getValidatedInput(userChoice, "Ketik Pilihan : ");
 
         if (isStringDigit(userChoice)) {
-            showBook(bookshelf, patrons, stoi(userChoice)-1);
+            if (stoi(userChoice)-1 < bookshelf.bookshelf.size()) {
+                showBook(bookshelf, patrons, stoi(userChoice)-1);
+            } else {
+                cout << "Buku tidak ditemukan! \n";
+
+                this_thread::sleep_for(chrono::seconds(3));
+            };
+            
             continue;
         } else if (userChoice == "a") {
             takeFromQueue(patrons);
@@ -757,7 +767,12 @@ void adminBooks(Bookshelf& bookshelf) {
 
         getValidatedInput(userChoice, "Ketik Pilihan: "); 
         if (isStringDigit(userChoice)) {
-            showBookAdmin(bookshelf.bookshelf, stoi(userChoice)-1);
+            if (stoi(userChoice)-1 <= bookshelf.bookshelf.size()) {
+                showBookAdmin(bookshelf.bookshelf, stoi(userChoice)-1);
+            } else {
+                cout << "Buku tidak ditemukan! \n";
+                this_thread::sleep_for(chrono::seconds(3));
+            };
         } else if (userChoice == "a") {
             adminCreateBook(bookshelf);
         } else if (userChoice == "b") {
@@ -857,7 +872,7 @@ void adminUsers(UserList& patrons) {
                             userToRemove->emptyBorrowedBook();
                         };
                         if (userToRemove->userBook.queuingBook) {
-                            userToRemove->userBook.queuingBook->bookQueue.QueueOfUsers.erase(userToRemove->userBook.queuingBook->bookQueue.QueueOfUsers.begin() + userToRemove->userBook.queuingBook->findQueuingUserIndex(userToRemove));
+                            userToRemove->userBook.queuingBook->bookQueue.QueueOfUsers.erase(userToRemove->userBook.queuingBook->bookQueue.QueueOfUsers.begin() + userToRemove->userBook.queuingBook->findQueuingUserIndex(userToRemove->Id));
                             userToRemove->userBook.queuingBook.reset();
                         };
                         
@@ -893,7 +908,7 @@ void adminUsers(UserList& patrons) {
                                 user->emptyBorrowedBook();
                             };
                             if (user->userBook.queuingBook) {
-                                user->userBook.queuingBook->bookQueue.QueueOfUsers.erase(user->userBook.queuingBook->bookQueue.QueueOfUsers.begin() + user->userBook.queuingBook->findQueuingUserIndex(user));
+                                user->userBook.queuingBook->bookQueue.QueueOfUsers.erase(user->userBook.queuingBook->bookQueue.QueueOfUsers.begin() + user->userBook.queuingBook->findQueuingUserIndex(user->Id));
                                 user->userBook.queuingBook.reset();
                             };
 
@@ -935,7 +950,7 @@ void adminPanel(Bookshelf& bookshelf, UserList& patrons) {
     header();
 
     while (true) {
-        getValidatedString(adminPassInput, "Masukkan password admin: ");
+        getValidatedString(adminPassInput, "Masukkan password admin (q untuk quit): ");
 
         if (adminPassInput == adminPass) {
             while (true) {
@@ -989,6 +1004,10 @@ void adminPanel(Bookshelf& bookshelf, UserList& patrons) {
                     return;
                 };
             };
+        } else if (adminPassInput == "q") {
+            return;
+        } else {
+            cout << "Password salah! \n";
         };
     };
 };
