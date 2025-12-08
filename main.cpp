@@ -607,7 +607,7 @@ void borrowScreen(Bookshelf& bookshelf, UserList& patrons) {
         getValidatedInput(userChoice, "Ketik Pilihan : ");
 
         if (isStringDigit(userChoice)) {
-            if (stoi(userChoice)-1 < bookshelf.bookshelf.size()) {
+            if (stoi(userChoice)-1 < (int)bookshelf.bookshelf.size()) {
                 showBook(bookshelf, patrons, stoi(userChoice)-1);
             } else {
                 cout << "Buku tidak ditemukan! \n";
@@ -767,7 +767,7 @@ void adminBooks(Bookshelf& bookshelf) {
 
         getValidatedInput(userChoice, "Ketik Pilihan: "); 
         if (isStringDigit(userChoice)) {
-            if (stoi(userChoice)-1 <= bookshelf.bookshelf.size()) {
+            if (stoi(userChoice)-1 <= (int)bookshelf.bookshelf.size()) {
                 showBookAdmin(bookshelf.bookshelf, stoi(userChoice)-1);
             } else {
                 cout << "Buku tidak ditemukan! \n";
