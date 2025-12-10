@@ -110,7 +110,7 @@ void Book::editBook(string isbn, string title, string author, int year, string e
     Year = year;
     lastEditDate = editDate;
 };
-void Book::updateBookQueues(shared_ptr<User> user) {
+void Book::updateBookQueues(shared_ptr<User>& user) {
     if (!(bookQueue.currentBorrower) && bookQueue.QueueOfUsers.empty()) {
         bookQueue.currentBorrower = user;
     } else {

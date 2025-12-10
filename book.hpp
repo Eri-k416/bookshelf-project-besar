@@ -25,7 +25,7 @@ public:
 
     // Methods
     void editBook(string isbn, string title, string author, int year, string editDate);
-    void updateBookQueues(shared_ptr<User> user);
+    void updateBookQueues(shared_ptr<User>& user);
     void emptyBookBorrower();
     void queueAdvance();
     int findQueuingUserIndex(int id);
