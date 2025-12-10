@@ -29,10 +29,6 @@ enum class userStatus {
     MEMINJAM,
     MENGANTRI
 };
-enum class getChoices {
-    VALUE,
-    INDEX
-};
 
 bool kabisat(int tahun);
 int kalkulasi_hari(string tanggal);
