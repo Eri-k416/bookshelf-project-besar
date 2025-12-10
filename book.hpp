@@ -24,7 +24,7 @@ public:
     Book(int& bookIdTether, string isbn, string title, string author, int year, string createdate);
 
     // Methods
-    void editBook(string isbn, string title, string author, int year);
+    void editBook(string isbn, string title, string author, int year, string editDate);
     void updateBookQueues(shared_ptr<User> user);
     void emptyBookBorrower();
     void queueAdvance();

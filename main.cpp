@@ -103,11 +103,12 @@ Book::Book(int& bookIdTether, string isbn, string title, string author, int year
     Year = year;
     createDate = createdate;
 };
-void Book::editBook(string isbn, string title, string author, int year) {
+void Book::editBook(string isbn, string title, string author, int year, string editDate) {
     Isbn = isbn;
     Title = title;
     Author = author;
     Year = year;
+    lastEditDate = editDate;
 };
 void Book::updateBookQueues(shared_ptr<User> user) {
     if (!(bookQueue.currentBorrower) && bookQueue.QueueOfUsers.empty()) {
@@ -680,6 +681,7 @@ void showBookAdmin(vector<shared_ptr<Book>>& bookshelf, int idx) {
             string title;
             string author;
             int year;
+            string editDate;
 
             cout << "ISBN buku: " << bookToShow->Isbn << endl;
             getValidatedInput(isbn, "Masukkan ISBN buku yang baru : ");
@@ -689,8 +691,10 @@ void showBookAdmin(vector<shared_ptr<Book>>& bookshelf, int idx) {
             getValidatedInput(author, "Masukkan Penulis buku yang baru : ");
             cout << "Tahun Terbit buku: " << bookToShow->Year << endl;
             getValidatedInput(year, "Masukkan Tahun buku yang baru : ");
+            cout << "Terakhir buku di edit pada tanggal : " << bookToShow->lastEditDate;
+            getValidatedInput(editDate, "Masukkan tanggal sekarang : ");
 
-            bookToShow->editBook(isbn, title, author, year);
+            bookToShow->editBook(isbn, title, author, year, editDate);
 
             break;
         } else if (userChoice == 2) {
