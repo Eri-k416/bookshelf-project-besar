@@ -62,7 +62,7 @@ void User::emptyBorrowedBook() {
     userBook.borrowedBook.reset();
     borrowDate = "";
 };
-void User::updateUserBooks(shared_ptr<Book> book) {
+void User::updateUserBooks(shared_ptr<Book>& book) {
     if (!(userBook.borrowedBook) && !(book->bookQueue.currentBorrower) && (book->findQueuingUserIndex(Id) != -1)) {
         userBook.borrowedBook = book;
     } else if (!userBook.queuingBook) {

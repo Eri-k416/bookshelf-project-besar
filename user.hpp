@@ -20,7 +20,7 @@ public:
     User(int& userIdTether, string name, string date);
 
     // Methods
-    void updateUserBooks(shared_ptr<Book> book);
+    void updateUserBooks(shared_ptr<Book>& book);
     void queueAdvanceBook();
     void emptyBorrowedBook();
     int countBookFine(string nowDate);
