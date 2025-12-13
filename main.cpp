@@ -54,8 +54,6 @@ User::User(int& userIdTether, string name, string date) {
     borrowDate = date;
 };
 
-
-
 void User::queueAdvanceBook() {
     userBook.borrowedBook.swap(userBook.queuingBook);
 };
@@ -170,8 +168,8 @@ void UserList::deleteUser(int id) {
     int index = getUserIndex(id);
     if (index == -1) {
         return;
-    }
-    shared_ptr<User> userToDelete = Users[index];
+    };
+    shared_ptr<User>& userToDelete = Users[index];
 
     if (userToDelete->userBook.borrowedBook) {
         userToDelete->userBook.borrowedBook->emptyBookBorrower();
@@ -233,9 +231,8 @@ void Bookshelf::deleteBook(int id) {
     shared_ptr<Book> bookToDelete = bookshelf[index];
 
     if (bookToDelete->bookQueue.currentBorrower) {
-        bookToDelete->emptyBookBorrower();
 
-        bookToDelete->bookQueue.currentBorrower->userBook.borrowedBook.reset(); 
+        bookToDelete->bookQueue.currentBorrower->emptyBorrowedBook(); 
 
         bookToDelete->emptyBookBorrower();
     };
