@@ -63,7 +63,7 @@ void User::emptyBorrowedBook() {
     borrowDate = "";
 };
 void User::updateUserBooks(shared_ptr<Book>& book) {
-    if (!(userBook.borrowedBook) && !(book->bookQueue.currentBorrower) && (book->findQueuingUserIndex(Id) != -1)) {
+    if (!(userBook.borrowedBook) && !(book->bookQueue.currentBorrower) && (book->findQueuingUserIndex(Id) == -1)) {
         userBook.borrowedBook = book;
     } else if (!userBook.queuingBook) {
         userBook.queuingBook = book;
@@ -559,7 +559,7 @@ void returnBook(UserList& patrons) {
         borrowingUser->Status = userStatus::PENDING;
     };
 
-    cout << "Berhasil mengembalikan buku! \n Buku dipinjam pada " << lastBorrowDate << " dan di kembalikan pada tanggal" << returnDate << "(format DDMMYYYY)" << endl;
+    cout << "Berhasil mengembalikan buku! \nBuku dipinjam pada " << lastBorrowDate << " dan di kembalikan pada tanggal " << returnDate << "(format DDMMYYYY)" << endl;
     cout << (denda < 5000? "Anda tidak dikenakan biaya untuk peminjaman ini." : "Anda telat " + to_string(denda/5000) + " hari. Anda dikenakan denda : Rp." + to_string(denda)) << endl;
     this_thread::sleep_for(chrono::seconds(10));
 };
